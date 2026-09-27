@@ -5,6 +5,8 @@
 cormoran.watchdog.ErrorResponse.message           max_size:64
 
 cormoran.watchdog.FreezeDetail.queue_name         max_size:16
+# ZMK_WATCHDOG_FREEZE_FRAMES in include/cormoran/zmk/watchdog.h must match.
+cormoran.watchdog.FreezeDetail.frames             max_count:6
 cormoran.watchdog.FatalDetail.thread_name         max_size:16
 
 # Pagination: at most 4 incidents per ListIncidents response

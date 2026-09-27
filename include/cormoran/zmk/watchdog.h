@@ -38,12 +38,33 @@ enum zmk_watchdog_incident_type {
 #define ZMK_WATCHDOG_QUEUE_NAME_LEN 16
 #define ZMK_WATCHDOG_THREAD_NAME_LEN 16
 
+/* How many code addresses a freeze record keeps (see frames[] below). */
+#define ZMK_WATCHDOG_FREEZE_FRAMES 6
+
 struct zmk_watchdog_incident_freeze_detail {
     /* task_wdt channel id that fired. */
     uint8_t channel_id;
-    uint8_t _reserved[3];
+    /* The queue thread's kernel thread_state bits when the freeze was
+     * detected (pending on an object, sleeping, ready but not running...).
+     * 0 in records written before this was captured. */
+    uint8_t thread_state;
+    /* How many entries of frames[] are filled; 0 when nothing was captured
+     * (older records, or a non-Cortex-M build). */
+    uint8_t frame_count;
+    uint8_t _reserved;
     /* Name of the monitored work queue, NUL-terminated, truncated if needed. */
     char queue_name[ZMK_WATCHDOG_QUEUE_NAME_LEN];
+    /* The wait queue the thread was pended on -- the address of the kernel
+     * object it was waiting for (a mutex, a semaphore...), which an ELF's
+     * symbol table names. 0 when it was not waiting on anything. */
+    uint32_t pended_on;
+    /* Where the queue's thread was stuck: frames[0] is the PC and frames[1]
+     * the LR from its saved context, then return addresses found on its
+     * stack, innermost first. The stack part is a scan, not an unwind: a
+     * word counts when it points just after a BL/BLX in .text, so an old
+     * return address left on the stack can appear. Read it as "these
+     * functions are on the way", which is what locating a freeze needs. */
+    uint32_t frames[ZMK_WATCHDOG_FREEZE_FRAMES];
 } __packed;
 
 struct zmk_watchdog_incident_fatal_detail {

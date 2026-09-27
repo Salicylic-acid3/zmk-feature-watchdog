@@ -14,6 +14,13 @@ enum IncidentType {
 message FreezeDetail {
     uint32 channel_id = 1;
     string queue_name = 2;
+    // Where the queue's thread was stuck (all zero/empty on older firmware).
+    // thread_state: Zephyr thread_state bits. pended_on: address of the
+    // kernel object it waited on, 0 if none. frames: PC, LR, then return
+    // addresses found on its stack, innermost first.
+    uint32 thread_state = 3;
+    uint32 pended_on = 4;
+    repeated uint32 frames = 5;
 }
 
 // Mirrors struct zmk_watchdog_incident_fatal_detail.

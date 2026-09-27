@@ -42,6 +42,13 @@ void watchdog_incident_record_to_proto(uint16_t id, uint32_t source,
         out->detail.freeze.channel_id = rec->detail.freeze.channel_id;
         snprintf(out->detail.freeze.queue_name, sizeof(out->detail.freeze.queue_name), "%s",
                  rec->detail.freeze.queue_name);
+        out->detail.freeze.thread_state = rec->detail.freeze.thread_state;
+        out->detail.freeze.pended_on = rec->detail.freeze.pended_on;
+        out->detail.freeze.frames_count =
+            MIN(rec->detail.freeze.frame_count, ARRAY_SIZE(out->detail.freeze.frames));
+        for (pb_size_t i = 0; i < out->detail.freeze.frames_count; i++) {
+            out->detail.freeze.frames[i] = rec->detail.freeze.frames[i];
+        }
         break;
     case ZMK_WATCHDOG_INCIDENT_FATAL:
         out->type = cormoran_watchdog_IncidentType_FATAL;

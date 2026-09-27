@@ -33,6 +33,10 @@ struct watchdog_store_slot_blob {
     struct zmk_watchdog_incident_record rec;
 } __packed;
 
+/* sizeof(struct watchdog_store_slot_blob) before the freeze location was
+ * added: 4-byte header + 12-byte record header + 28-byte detail union. */
+#define WATCHDOG_STORE_BLOB_V1_SIZE 44
+
 struct watchdog_store_slot {
     bool used;
     struct watchdog_store_slot_blob blob;
@@ -339,11 +343,15 @@ static int watchdog_settings_set(const char *name, size_t len, settings_read_cb 
             return -ENOENT;
         }
 
-        struct watchdog_store_slot_blob blob;
-        if (len != sizeof(blob)) {
+        /* A record written before freeze records carried a location is
+         * shorter (the freeze detail grew; the record kept its version,
+         * since every new field reads as "not captured" when zero). Load it
+         * zero-extended rather than dropping the user's incident history. */
+        struct watchdog_store_slot_blob blob = {0};
+        if (len > sizeof(blob) || len < WATCHDOG_STORE_BLOB_V1_SIZE) {
             return -EINVAL;
         }
-        ssize_t read = read_cb(cb_arg, &blob, sizeof(blob));
+        ssize_t read = read_cb(cb_arg, &blob, len);
         if (read < 0) {
             return (int)read;
         }
